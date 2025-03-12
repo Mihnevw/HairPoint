@@ -24,7 +24,7 @@ const sendClientConfirmation = async (appointmentDetails) => {
   const { name, date, startTime, endTime, email } = appointmentDetails;
   
   const mailOptions = {
-    from: `"${process.env.EMAIL_FROM_NAME || 'Hair Salon'}" <${process.env.EMAIL_USER}>`,
+    from: `"${process.env.EMAIL_FROM_NAME || 'AF_Barbershop'}" <${process.env.EMAIL_USER}>`,
     to: email,
     subject: 'Потвърждение за резервация',
     html: `
@@ -35,7 +35,7 @@ const sendClientConfirmation = async (appointmentDetails) => {
       <p><strong>Час:</strong> ${startTime} - ${endTime}</p>
       <p>Очакваме ви!</p>
       <p>Ако имате нужда от промяна на часа, моля свържете се с нас.</p>
-      <p>Поздрави,<br>Вашият фризьорски салон</p>
+      <p>Поздрави,<br>AF_Barbershop</p>
     `
   };
 
@@ -53,7 +53,7 @@ const sendAdminNotification = async (appointmentDetails) => {
   const { name, email, phone, date, startTime, endTime } = appointmentDetails;
   
   const mailOptions = {
-    from: `"${process.env.EMAIL_FROM_NAME || 'Hair Salon'}" <${process.env.EMAIL_USER}>`,
+    from: `"${process.env.EMAIL_FROM_NAME || 'AF_Barbershop'}" <${process.env.EMAIL_USER}>`,
     to: process.env.ADMIN_EMAIL || process.env.EMAIL_USER,
     subject: 'Нова резервация',
     html: `
