@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="100" cy="100" r="98" fill="white" stroke="currentColor" stroke-width="4"/>
+  
+  <!-- Scissors -->
+  <g transform="translate(50, 60) scale(0.8)">
+    <path d="M60 100 L140 20" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
+    <path d="M60 20 L140 100" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
+    
+    <!-- Handles -->
+    <circle cx="60" cy="20" r="15" fill="currentColor"/>
+    <circle cx="60" cy="100" r="15" fill="currentColor"/>
+    <circle cx="140" cy="20" r="15" fill="currentColor"/>
+    <circle cx="140" cy="100" r="15" fill="currentColor"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="100" y="160" text-anchor="middle" font-family="Arial" font-weight="bold" font-size="24" fill="currentColor">
+    AF_BARBER
+  </text>
+</svg> 
