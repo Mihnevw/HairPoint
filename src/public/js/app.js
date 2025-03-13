@@ -448,7 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (response.status === 400) {
                     throw new Error(data.message || 'Please check your input and try again.');
                 } else {
-                    throw new Error(data.message || 'Не успяхте да запазите час, защото часът е зает. Моля, изберете друг час/дата!.');
+                    throw new Error(data.message || 'Не успяхте да запазите час, защото часът е зает. Моля, изберете друг час/дата!');
                 }
             }
 
