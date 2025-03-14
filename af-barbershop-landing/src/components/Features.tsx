@@ -88,7 +88,7 @@ const Features = () => {
             <div className="text-gray-600">Доволни клиенти</div>
           </div>
           <div>
-            <div className="text-4xl font-bold text-accent-600 mb-2">4</div>
+            <div className="text-4xl font-bold text-accent-600 mb-2">2</div>
             <div className="text-gray-600">Професионалисти</div>
           </div>
           <div>
