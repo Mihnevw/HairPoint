@@ -10,24 +10,44 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Process error handlers
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  // Don't exit the process
+});
+
+process.on('unhandledRejection', (error) => {
+  console.error('Unhandled Rejection:', error);
+  // Don't exit the process
+});
+
 // Basic route for root path
 app.get('/', (req, res) => {
-  res.json({ message: 'AF Barbershop API is running' });
+  res.json({ 
+    message: 'AF Barbershop API is running',
+    environment: process.env.NODE_ENV || 'development',
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
 });
 
 // MongoDB Connection with retry logic
 const connectDB = async () => {
   try {
     if (!process.env.MONGODB_URI) {
-      throw new Error('MongoDB URI is not defined in environment variables');
+      console.error('MongoDB URI is not defined in environment variables');
+      return;
     }
 
-    await mongoose.connect(process.env.MONGODB_URI, {
+    const options = {
       useNewUrlParser: true,
       useUnifiedTopology: true,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
-    });
+      retryWrites: true,
+      w: 'majority'
+    };
+
+    await mongoose.connect(process.env.MONGODB_URI, options);
     console.log('Connected to MongoDB successfully');
   } catch (error) {
     console.error('MongoDB connection error:', error.message);
@@ -159,6 +179,12 @@ app.get('/health', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+});
+
+// Handle server errors
+server.on('error', (error) => {
+  console.error('Server error:', error);
 }); 
