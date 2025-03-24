@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 
-const INSTAGRAM_USER_ID = '1708933690022151';
-const INSTAGRAM_ACCESS_TOKEN = 'EAAYSRCGJ2QcBO9QS5UZCynctsIdIZC6sL1NTzK0OsYcow4zeGgmQcWOCpdvL1d2qokXaQjYRZCyhR7933T4kZAhnHypNlfsBcDZCmOTegOD9PYgqkEa6v9Wx5f3wWJkcbMJUwmoQLxmKxAtrwEOX1eXiXB0A026QUD0FfxS0ZAeEJYTsIlFzaJbSkv';
-const PROXY_URL = 'https://cors-anywhere.herokuapp.com/https://graph.instagram.com/v19.0/1708933690022151/media?fields=id,media_type,media_url,permalink&access_token=EAAYSRCGJ2QcBO9QS5UZCynctsIdIZC6sL1NTzK0OsYcow4zeGgmQcWOCpdvL1d2qokXaQjYRZCyhR7933T4kZAhnHypNlfsBcDZCmOTegOD9PYgqkEa6v9Wx5f3wWJkcbMJUwmoQLxmKxAtrwEOX1eXiXB0A026QUD0FfxS0ZAeEJYTsIlFzaJbSkv';
-const INSTAGRAM_API_URL = `https://graph.instagram.com/${INSTAGRAM_USER_ID}/media?fields=id,media_type,media_url,permalink&access_token=${INSTAGRAM_ACCESS_TOKEN}`;
+const INSTAGRAM_USER_ID = '110889977242232' as string;
+const INSTAGRAM_ACCESS_TOKEN = 'EAAYSRCGJ2QcBO1QfLZBhuhdE63N4aZCzuLZCNMpDDxFATga1ZCTlE5c2ysUpkM5nkJaqpwh4vLPHTjjMbIBP6pvNczldN1BfcJV5g0og1DabOtxutt1fk47dKZB7TMZA01s9ZAxZASAPR08T4ZBnDmyf7YyKNMht52aa9EzR9Ulxn7Wn8PZCi4vuBVldsHP22p4NYHhZCZCBweHwaYUbDei4BQZDZD' as string;
+const INSTAGRAM_API_URL = `https://graph.facebook.com/v17.0/${INSTAGRAM_USER_ID}/media?fields=id,media_type,media_url,permalink&access_token=${INSTAGRAM_ACCESS_TOKEN}`;
 
 interface InstagramPost {
   id: string;
@@ -18,14 +17,17 @@ const InstagramFeed: React.FC = () => {
 
   useEffect(() => {
     const fetchInstagramPosts = async () => {
-  try {
-    const response = await fetch(`${PROXY_URL}${INSTAGRAM_API_URL}`);
-    const data = await response.json();
-    setPosts(data.data || []);
-  } catch (err) {
-    setError('Error fetching Instagram posts:' + err);
-  }
-};
+      try {
+        const response = await fetch(INSTAGRAM_API_URL);
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const data = await response.json();
+        setPosts(data.data || []);
+      } catch (err) {
+        setError('Error fetching Instagram posts: ' + (err as Error).message);
+      }
+    };
 
     fetchInstagramPosts();
   }, []);

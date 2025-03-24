@@ -4,18 +4,19 @@ import Features from './components/Features';
 import FAQ from './components/FAQ';
 import ContactForm from './components/ContactForm';
 import Footer from './components/Footer';
-import InstagramFeed from './components/InstagramFeed';
 import GallerySection from './components/GallerySection';
+import InstagramFeeds from './components/InstagramFeeds';
+
 function App() {
   return (
     <div className="min-h-screen bg-white">
       <Hero />
       <Services />
       <Features />
-      <FAQ />
       <GallerySection />
+      <FAQ />
       <ContactForm />
-      <InstagramFeed /> 
+      <InstagramFeeds />
       <Footer />
     </div>
   );
