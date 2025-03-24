@@ -14,17 +14,34 @@ app.use(express.json());
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  ssl: true,
-  tlsAllowInvalidCertificates: false
+  serverSelectionTimeoutMS: 5000 // Timeout after 5s instead of 30s
 }).then(() => {
   console.log('Connected to MongoDB successfully');
 }).catch((error) => {
   console.error('MongoDB connection error:', error.message);
-  console.error('Error code:', error.code);
-  console.error('Error name:', error.name);
   if (error.code === 8000) {
-    console.error('Authentication failed. Please check your username and password in the .env file');
+    console.error('Authentication failed. Please check your MongoDB credentials');
+  } else if (error.code === 'ECONNREFUSED') {
+    console.error('Could not connect to MongoDB. Please check if the server is running and accessible');
   }
+  // Don't exit the process, let the app continue running
+});
+
+// Add error handler for MongoDB connection
+mongoose.connection.on('error', (err) => {
+  console.error('MongoDB connection error:', err);
+});
+
+// Add disconnection handler
+mongoose.connection.on('disconnected', () => {
+  console.log('MongoDB disconnected. Attempting to reconnect...');
+  setTimeout(() => {
+    mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000
+    });
+  }, 5000);
 });
 
 // Contact Schema
@@ -53,25 +70,28 @@ app.post('/api/contact', async (req, res) => {
 app.get('/instagram-feed', async (req, res) => {
   try {
     if (!process.env.INSTAGRAM_TOKEN) {
-      throw new Error('Instagram token is not configured in .env file');
+      console.error('Instagram token is not configured');
+      return res.json({ data: [] });
     }
 
-    console.log('Token length:', process.env.INSTAGRAM_TOKEN.length);
-    
     // First, get the Instagram Business Account ID
     const accountResponse = await fetch(
       `https://graph.facebook.com/v18.0/me/accounts?access_token=${process.env.INSTAGRAM_TOKEN}`
     );
     
     const accountData = await accountResponse.json();
-    console.log('Facebook Account Response:', JSON.stringify(accountData, null, 2));
     
     if (accountData.error) {
-      throw new Error(`Facebook API error: ${accountData.error.message} (Code: ${accountData.error.code})`);
+      console.error('Facebook API error:', accountData.error);
+      if (accountData.error.code === 190) {
+        console.error('Token expired or invalid');
+      }
+      return res.json({ data: [] });
     }
     
     if (!accountData.data || accountData.data.length === 0) {
-      throw new Error('No Facebook pages found');
+      console.error('No Facebook pages found');
+      return res.json({ data: [] });
     }
     
     const pageId = accountData.data[0].id;
@@ -82,38 +102,48 @@ app.get('/instagram-feed', async (req, res) => {
     );
     
     const igAccountData = await igAccountResponse.json();
-    console.log('Instagram Account Response:', igAccountData);
     
     if (igAccountData.error) {
-      throw new Error(`Instagram API error: ${igAccountData.error.message}`);
+      console.error('Instagram API error:', igAccountData.error);
+      return res.json({ data: [] });
     }
     
     if (!igAccountData.instagram_business_account) {
-      throw new Error('Instagram Business Account not connected. Please connect your Instagram account to your Facebook page.');
+      console.error('Instagram Business Account not connected');
+      return res.json({ data: [] });
     }
     
     const igAccountId = igAccountData.instagram_business_account.id;
     
-    // Get Instagram Media
+    // Get Instagram Media with error handling
     const mediaResponse = await fetch(
       `https://graph.facebook.com/v18.0/${igAccountId}/media?fields=id,caption,media_url,permalink&access_token=${process.env.INSTAGRAM_TOKEN}&limit=6`
     );
     
     const mediaData = await mediaResponse.json();
-    console.log('Instagram Media Response:', mediaData);
     
     if (mediaData.error) {
-      throw new Error(`Instagram Media API error: ${mediaData.error.message}`);
+      console.error('Instagram Media API error:', mediaData.error);
+      return res.json({ data: [] });
     }
     
+    // Cache the response for 1 hour
+    res.set('Cache-Control', 'public, max-age=3600');
     res.json(mediaData);
   } catch (error) {
     console.error('Instagram feed error:', error);
-    res.status(500).json({ 
-      error: 'Error fetching Instagram posts',
-      details: error.message
-    });
+    res.json({ data: [] });
   }
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  const status = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  };
+  res.json(status);
 });
 
 const PORT = process.env.PORT || 5000;
