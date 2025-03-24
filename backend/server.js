@@ -10,22 +10,39 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 5000 // Timeout after 5s instead of 30s
-}).then(() => {
-  console.log('Connected to MongoDB successfully');
-}).catch((error) => {
-  console.error('MongoDB connection error:', error.message);
-  if (error.code === 8000) {
-    console.error('Authentication failed. Please check your MongoDB credentials');
-  } else if (error.code === 'ECONNREFUSED') {
-    console.error('Could not connect to MongoDB. Please check if the server is running and accessible');
-  }
-  // Don't exit the process, let the app continue running
+// Basic route for root path
+app.get('/', (req, res) => {
+  res.json({ message: 'AF Barbershop API is running' });
 });
+
+// MongoDB Connection with retry logic
+const connectDB = async () => {
+  try {
+    if (!process.env.MONGODB_URI) {
+      throw new Error('MongoDB URI is not defined in environment variables');
+    }
+
+    await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+    console.log('Connected to MongoDB successfully');
+  } catch (error) {
+    console.error('MongoDB connection error:', error.message);
+    if (error.code === 8000) {
+      console.error('Authentication failed. Please check your MongoDB credentials');
+    } else if (error.code === 'ECONNREFUSED') {
+      console.error('Could not connect to MongoDB. Please check if the server is running and accessible');
+    }
+    // Retry connection after 5 seconds
+    setTimeout(connectDB, 5000);
+  }
+};
+
+// Start MongoDB connection
+connectDB();
 
 // Add error handler for MongoDB connection
 mongoose.connection.on('error', (err) => {
@@ -35,13 +52,7 @@ mongoose.connection.on('error', (err) => {
 // Add disconnection handler
 mongoose.connection.on('disconnected', () => {
   console.log('MongoDB disconnected. Attempting to reconnect...');
-  setTimeout(() => {
-    mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000
-    });
-  }, 5000);
+  setTimeout(connectDB, 5000);
 });
 
 // Contact Schema
@@ -141,12 +152,13 @@ app.get('/health', (req, res) => {
   const status = {
     status: 'ok',
     timestamp: new Date().toISOString(),
-    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    environment: process.env.NODE_ENV || 'development'
   };
   res.json(status);
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 }); 
