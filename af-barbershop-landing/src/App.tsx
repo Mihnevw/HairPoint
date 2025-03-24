@@ -5,8 +5,9 @@ import FAQ from './components/FAQ';
 import ContactForm from './components/ContactForm';
 import Footer from './components/Footer';
 import GallerySection from './components/GallerySection';
-import InstagramFeeds from './components/InstagramFeeds';
+//import InstagramFeeds from './components/InstagramFeeds';
 
+//TODO: Add InstagramFeeds component
 function App() {
   return (
     <div className="min-h-screen bg-white">
@@ -16,7 +17,7 @@ function App() {
       <GallerySection />
       <FAQ />
       <ContactForm />
-      <InstagramFeeds />
+      {/* <InstagramFeeds /> */}
       <Footer />
     </div>
   );
