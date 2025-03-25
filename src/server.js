@@ -66,7 +66,11 @@ app.use((req, res, next) => {
 
 // CSRF Protection
 app.use(csrf({ 
-    cookie: true // Use default cookie settings
+    cookie: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+    }
 }));
 
 // Make CSRF token available to all views and set in cookie
@@ -75,6 +79,9 @@ app.use((req, res, next) => {
         const token = req.csrfToken();
         // Make token available to views
         res.locals.csrfToken = token;
+        
+        // Set CSRF token in response header for API requests
+        res.setHeader('X-CSRF-Token', token);
         
         // Debug logging
         logger.info('=== CSRF Debug Info ===');
@@ -94,6 +101,7 @@ const reservationRoutes = require('./routes/reservationRoutes');
 const availableSlotsRoutes = require('./routes/availableSlotsRoutes');
 const authRoutes = require('./routes/authRoutes');
 
+// Exclude CSRF protection for specific routes that need to be accessible
 app.use('/api/reservations', reservationRoutes);
 app.use('/api/available-slots', availableSlotsRoutes);
 app.use('/auth', authRoutes);
@@ -109,10 +117,19 @@ app.use((err, req, res, next) => {
             body: req.body,
             session: req.session
         });
-        return res.status(403).json({
-            error: 'Security token missing or invalid',
-            message: 'Please refresh the page and try again'
-        });
+        
+        // For API requests, return JSON response
+        if (req.xhr || req.path.startsWith('/api/')) {
+            return res.status(403).json({
+                error: 'Security token missing or invalid',
+                message: 'Please refresh the page and try again',
+                csrfToken: req.csrfToken()
+            });
+        }
+        
+        // For regular requests, redirect with error message
+        req.flash('error', 'Security token missing or invalid. Please try again.');
+        return res.redirect('back');
     }
 
     next(err);

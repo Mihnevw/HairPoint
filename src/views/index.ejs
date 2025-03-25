@@ -234,7 +234,7 @@ Cookies: <%= JSON.stringify(debug.cookies, null, 2) %></pre>
 
         <div class="form-container">
           <h3 class="form-title">Детайли за резервация</h3>
-          <form id="reservationForm">
+          <form id="reservationForm" class="needs-validation" novalidate>
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <input type="hidden" name="date" id="date">
             

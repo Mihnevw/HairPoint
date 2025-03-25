@@ -284,204 +284,72 @@ document.addEventListener('DOMContentLoaded', () => {
         hideMessages();
 
         try {
-            let hasErrors = false;
-
-            // Date validation
-            if (!selectedDateDiv.textContent || selectedDateDiv.textContent === 'Изберете дата от календара') {
-                showError('Моля, изберете дата от календара');
-                selectedDateDiv.classList.add('is-invalid');
-                hasErrors = true;
-                return;
-            }
-
-            // Start time validation
-            const startTime = startTimeSelect.value;
-            if (!startTime) {
-                showError('Моля, изберете начален час');
-                startTimeSelect.classList.add('is-invalid');
-                hasErrors = true;
-                return;
-            }
-
-            // End time validation
-            const endTime = endTimeSelect.value;
-            if (!endTime) {
-                showError('Моля, изберете краен час');
-                endTimeSelect.classList.add('is-invalid');
-                hasErrors = true;
-                return;
-            }
-
-            // Name validation
-            const nameInput = document.getElementById('name');
-            if (!nameInput.value.trim()) {
-                showError('Моля, въведете вашето име');
-                nameInput.classList.add('is-invalid');
-                hasErrors = true;
-                return;
-            }
-
-            // Phone validation
-            const phoneInput = document.getElementById('phone');
-            const phoneValue = phoneInput.value.replace(/\s/g, ''); // Remove spaces for validation
-            if (!phoneValue || phoneValue.length < 10) {
-                showError('Моля, въведете валиден телефонен номер (10 цифри)');
-                phoneInput.classList.add('is-invalid');
-                hasErrors = true;
-                return;
-            }
-
-            // Email validation
-            const emailInput = document.getElementById('email');
-            const emailValue = emailInput.value.trim().toLowerCase();
-            if (!emailValue) {
-                showError('Моля, въведете имейл адрес');
-                emailInput.classList.add('is-invalid');
-                hasErrors = true;
-                return;
-            }
-            
-            // Specific Gmail validation
-            if (!emailValue.endsWith('@gmail.com')) {
-                showError('Моля, използвайте Gmail адрес (@gmail.com)');
-                emailInput.classList.add('is-invalid');
-                hasErrors = true;
-                return;
-            }
-
-            if (hasErrors) {
-                return;
-            }
-
-            // Remove any previous validation styling
-            const formInputs = form.querySelectorAll('.form-control, .form-select');
-            formInputs.forEach(input => input.classList.remove('is-invalid'));
-
-            // Get CSRF token from the hidden input field
-            const csrfToken = document.querySelector('input[name="_csrf"]')?.value;
+            // Get CSRF token from meta tag or form input
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || 
+                             document.querySelector('input[name="_csrf"]')?.value;
 
             if (!csrfToken) {
-                debug('CSRF token not found in form', {
-                    cookies: document.cookie,
-                    metaToken: document.querySelector('meta[name="csrf-token"]')?.content,
-                    inputToken: document.querySelector('input[name="_csrf"]')?.value
-                });
                 throw new Error('Security token missing. Please refresh the page.');
             }
 
-            // Verify all form elements exist
-            if (!nameInput || !phoneInput || !emailInput) {
-                throw new Error('Form elements not found. Please refresh the page.');
-            }
-
+            // Get form data
             const formData = {
                 date: selectedDateDiv.textContent,
                 startTime: startTimeSelect.value,
                 endTime: endTimeSelect.value,
                 name: nameInput.value,
-                phone: phoneValue,
-                email: emailValue,
+                phone: phoneInput.value.replace(/\s/g, ''),
+                email: emailInput.value.trim().toLowerCase(),
                 _csrf: csrfToken
             };
 
-            // Add input event listeners for real-time validation
-            document.addEventListener('DOMContentLoaded', () => {
-                // ... existing DOMContentLoaded code ...
+            // Validate form data
+            if (!formData.date || !formData.startTime || !formData.endTime || 
+                !formData.name || !formData.phone || !formData.email) {
+                throw new Error('Моля, попълнете всички полета');
+            }
 
-                // Real-time email validation
-                emailInput.addEventListener('input', () => {
-                    const email = emailInput.value.trim().toLowerCase();
-                    if (email && !email.endsWith('@gmail.com')) {
-                        emailInput.classList.add('is-invalid');
-                        showError('Моля, използвайте Gmail адрес (@gmail.com)');
-                    } else {
-                        emailInput.classList.remove('is-invalid');
-                        hideMessages();
-                    }
-                });
+            // Validate phone number
+            if (formData.phone.length !== 10) {
+                throw new Error('Моля, въведете валиден телефонен номер (10 цифри)');
+            }
 
-                // Real-time phone validation
-                phoneInput.addEventListener('input', () => {
-                    const phone = phoneInput.value.replace(/\s/g, '');
-                    if (phone && phone.length !== 10) {
-                        phoneInput.classList.add('is-invalid');
-                        showError('Телефонният номер трябва да е 10 цифри');
-                    } else {
-                        phoneInput.classList.remove('is-invalid');
-                        hideMessages();
-                    }
-                });
+            // Validate email
+            if (!formData.email.endsWith('@gmail.com')) {
+                throw new Error('Моля, използвайте Gmail адрес (@gmail.com)');
+            }
 
-                // Real-time name validation
-                nameInput.addEventListener('input', () => {
-                    if (!nameInput.value.trim()) {
-                        nameInput.classList.add('is-invalid');
-                        showError('Моля, въведете вашето име');
-                    } else {
-                        nameInput.classList.remove('is-invalid');
-                        hideMessages();
-                    }
-                });
+            // Show loading state
+            const originalButtonText = submitButton.innerHTML;
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Изпращане...';
 
-                // Time selection validation
-                startTimeSelect.addEventListener('change', () => {
-                    if (!startTimeSelect.value) {
-                        startTimeSelect.classList.add('is-invalid');
-                        showError('Моля, изберете начален час');
-                    } else {
-                        startTimeSelect.classList.remove('is-invalid');
-                        hideMessages();
-                    }
-                });
-
-                endTimeSelect.addEventListener('change', () => {
-                    if (!endTimeSelect.value) {
-                        endTimeSelect.classList.add('is-invalid');
-                        showError('Моля, изберете краен час');
-                    } else {
-                        endTimeSelect.classList.remove('is-invalid');
-                        hideMessages();
-                    }
-                });
-            });
-
-            debug('Submitting form', { 
-                formData: { ...formData, _csrf: 'HIDDEN' }
-            });
-
-            showLoading();
-            
+            // Send the request
             const response = await fetch('/api/reservations', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'CSRF-Token': csrfToken
+                    'X-CSRF-Token': csrfToken
                 },
                 credentials: 'include',
                 body: JSON.stringify(formData)
             });
 
             const data = await response.json();
-            
-            debug('Response received', { 
-                status: response.status,
-                statusText: response.statusText,
-                data: data
-            });
 
             if (!response.ok) {
-                if (response.status === 403) {
-                    throw new Error('Security token expired. Please refresh the page.');
-                } else if (response.status === 400) {
-                    throw new Error(data.message || 'Please check your input and try again.');
-                } else {
-                    throw new Error(data.message || 'Не успяхте да запазите час, защото часът е зает. Моля, изберете друг час/дата!');
-                }
+                throw new Error(data.error || 'Възникна грешка при изпращането на резервацията');
             }
 
-            showSuccess('Успешно запазихте час!');
+            // Show success message
+            if (successMessage) {
+                successMessage.textContent = 'Резервацията е успешно направена! Ще получите потвърждение на имейл.';
+                successMessage.classList.remove('d-none');
+            }
+
+            // Reset form
             form.reset();
-            selectedDateDiv.textContent = 'Изберете дата от календара';
+            selectedDateDiv.textContent = '';
             startTimeSelect.value = '';
             endTimeSelect.value = '';
             endTimeSelect.disabled = true;
@@ -492,10 +360,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         } catch (error) {
-            console.error('Form submission error:', error);
-            showError(error.message || 'Error submitting form. Please try again.');
+            console.error('Error:', error);
+            if (errorMessage) {
+                errorMessage.textContent = error.message;
+                errorMessage.classList.remove('d-none');
+            }
         } finally {
-            hideLoading();
+            // Reset button state
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonText;
         }
     });
 });
