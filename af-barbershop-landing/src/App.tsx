@@ -1,23 +1,36 @@
-import Hero from './components/Hero';
-import Services from './components/Services';
+import Navbar from './components/Navbar';
+import HeroSection from './components/HeroSection';
+import ServicesSection from './components/ServicesSection';
 import Features from './components/Features';
-import FAQ from './components/FAQ';
-import ContactForm from './components/ContactForm';
-import Footer from './components/Footer';
 import GallerySection from './components/GallerySection';
-//import InstagramFeeds from './components/InstagramFeeds';
+import FAQ from './components/FAQ';
+import ContactSection from './components/ContactSection';
+import Footer from './components/Footer';
 
-//TODO: Add InstagramFeeds component
 function App() {
   return (
-    <div className="min-h-screen bg-white">
-      <Hero />
-      <Services />
-      <Features />
-      <GallerySection />
-      <FAQ />
-      <ContactForm />
-      {/* <InstagramFeeds /> */}
+    <div className="min-h-screen">
+      <Navbar />
+      <main>
+        <section id="home">
+          <HeroSection />
+        </section>
+        <section id="services" className="pt-16">
+          <ServicesSection />
+        </section>
+        <section id="features" className="pt-16">
+          <Features />
+        </section>
+        <section id="gallery" className="pt-16">
+          <GallerySection />
+        </section>
+        <section id="faq" className="pt-16">
+          <FAQ />
+        </section>
+        <section id="contact" className="pt-16">
+          <ContactSection />
+        </section>
+      </main>
       <Footer />
     </div>
   );

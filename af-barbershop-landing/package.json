@@ -12,11 +12,13 @@
     "@types/node": "^16.18.89",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
+    "@types/react-scroll": "^1.8.10",
     "framer-motion": "^12.5.0",
     "instafeed.js": "^2.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
+    "react-scroll": "^1.9.3",
     "typescript": "^5.4.5",
     "web-vitals": "^2.1.4"
   },

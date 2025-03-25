@@ -30,7 +30,7 @@ const Footer = () => {
               Работно време
             </h3>
             <p className="text-gray-300">
-              Понеделник - Петък: 09:00 - 19:00<br />
+              Понеделник - Петък: 10:00 - 19:00<br />
               Събота: 10:00 - 14:00<br />
               Неделя: Почивен ден
             </p>
@@ -42,7 +42,7 @@ const Footer = () => {
             <div className="space-y-2 text-gray-300">
               <p className="flex items-center">
                 <PhoneIcon className="w-5 h-5 mr-2" />
-                +359 888 888 888
+                +359 877 006 199
               </p>
               <p className="flex items-center">
                 <EnvelopeIcon className="w-5 h-5 mr-2" />

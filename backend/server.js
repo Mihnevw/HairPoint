@@ -23,7 +23,7 @@ process.on('unhandledRejection', (error) => {
 
 // Basic route for root path
 app.get('/', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'AF Barbershop API is running',
     environment: process.env.NODE_ENV || 'development',
     mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
@@ -109,9 +109,9 @@ app.get('/instagram-feed', async (req, res) => {
     const accountResponse = await fetch(
       `https://graph.facebook.com/v18.0/me/accounts?access_token=${process.env.INSTAGRAM_TOKEN}`
     );
-    
+
     const accountData = await accountResponse.json();
-    
+
     if (accountData.error) {
       console.error('Facebook API error:', accountData.error);
       if (accountData.error.code === 190) {
@@ -119,45 +119,45 @@ app.get('/instagram-feed', async (req, res) => {
       }
       return res.json({ data: [] });
     }
-    
+
     if (!accountData.data || accountData.data.length === 0) {
       console.error('No Facebook pages found');
       return res.json({ data: [] });
     }
-    
+
     const pageId = accountData.data[0].id;
-    
+
     // Get Instagram Business Account ID
     const igAccountResponse = await fetch(
       `https://graph.facebook.com/v18.0/${pageId}?fields=instagram_business_account&access_token=${process.env.INSTAGRAM_TOKEN}`
     );
-    
+
     const igAccountData = await igAccountResponse.json();
-    
+
     if (igAccountData.error) {
       console.error('Instagram API error:', igAccountData.error);
       return res.json({ data: [] });
     }
-    
+
     if (!igAccountData.instagram_business_account) {
       console.error('Instagram Business Account not connected');
       return res.json({ data: [] });
     }
-    
+
     const igAccountId = igAccountData.instagram_business_account.id;
-    
+
     // Get Instagram Media with error handling
     const mediaResponse = await fetch(
       `https://graph.facebook.com/v18.0/${igAccountId}/media?fields=id,caption,media_url,permalink&access_token=${process.env.INSTAGRAM_TOKEN}&limit=6`
     );
-    
+
     const mediaData = await mediaResponse.json();
-    
+
     if (mediaData.error) {
       console.error('Instagram Media API error:', mediaData.error);
       return res.json({ data: [] });
     }
-    
+
     // Cache the response for 1 hour
     res.set('Cache-Control', 'public, max-age=3600');
     res.json(mediaData);
