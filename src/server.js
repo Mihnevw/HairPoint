@@ -27,7 +27,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // CORS configuration
 app.use(cors({
     origin: process.env.NODE_ENV === 'production' 
-        ? process.env.FRONTEND_URL || 'https://your-heroku-app.herokuapp.com'
+        ? 'https://afbarber-acdc6f830efb.herokuapp.com'
         : 'http://localhost:3000',
     credentials: true
 }));
