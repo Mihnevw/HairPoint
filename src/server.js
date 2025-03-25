@@ -26,7 +26,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // CORS configuration
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: process.env.NODE_ENV === 'production' 
+        ? process.env.FRONTEND_URL || 'https://your-heroku-app.herokuapp.com'
+        : 'http://localhost:3000',
     credentials: true
 }));
 
@@ -62,17 +64,12 @@ app.use((req, res, next) => {
     next();
 });
 
-// CSRF Protection with debug logging
+// CSRF Protection
 app.use(csrf({ 
-    cookie: {
-        key: '_csrf',
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax'
-    }
+    cookie: true // Use default cookie settings
 }));
 
-// Make CSRF token available to all views
+// Make CSRF token available to all views and set in cookie
 app.use((req, res, next) => {
     try {
         const token = req.csrfToken();
@@ -83,53 +80,12 @@ app.use((req, res, next) => {
         logger.info('=== CSRF Debug Info ===');
         logger.info('New CSRF Token Generated:', token);
         logger.info('CSRF Cookie:', req.cookies['_csrf']);
-        logger.info('Session CSRF:', req.session._csrf);
-        logger.info('Headers:', {
-            'csrf-token': req.headers['csrf-token'],
-            'x-csrf-token': req.headers['x-csrf-token'],
-            'xsrf-token': req.headers['xsrf-token']
-        });
+        logger.info('Request Headers:', req.headers);
         
-        // Set CSRF token in cookie and header
-        res.cookie('XSRF-TOKEN', token, {
-            httpOnly: false,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax'
-        });
         next();
     } catch (error) {
         logger.error('CSRF Middleware Error:', error);
         next(error);
-    }
-});
-
-// Main route to serve the index page
-app.get('/', (req, res) => {
-    try {
-        const token = req.csrfToken();
-        logger.info('=== Index Route Debug Info ===');
-        logger.info('Generated CSRF token for index:', token);
-        logger.info('Current Session ID:', req.sessionID);
-        logger.info('Current Session:', JSON.stringify(req.session, null, 2));
-        logger.info('Current Cookies:', JSON.stringify(req.cookies, null, 2));
-        
-        res.render('index', { 
-            csrfToken: token,
-            debug: process.env.NODE_ENV !== 'production' ? {
-                sessionId: req.sessionID,
-                csrfToken: token,
-                cookies: req.cookies
-            } : null
-        });
-    } catch (error) {
-        logger.error('Error in index route:', error);
-        res.status(500).json({
-            error: 'Error generating security token',
-            debug: process.env.NODE_ENV === 'development' ? {
-                message: error.message,
-                stack: error.stack
-            } : undefined
-        });
     }
 });
 
@@ -145,31 +101,21 @@ app.use('/auth', authRoutes);
 // Error handling middleware
 app.use((err, req, res, next) => {
     logger.error('Error:', err);
-    logger.error('Stack:', err.stack);
     
     if (err.code === 'EBADCSRFTOKEN') {
         logger.error('CSRF Error Details:', {
             headers: req.headers,
             cookies: req.cookies,
             body: req.body,
-            session: req.session,
-            expectedToken: req.cookies['_csrf'],
-            receivedToken: req.headers['csrf-token'] || req.headers['x-csrf-token'] || req.body._csrf
+            session: req.session
         });
         return res.status(403).json({
-            error: 'Invalid CSRF token',
-            message: 'Please refresh the page and try again',
-            debug: process.env.NODE_ENV === 'development' ? {
-                expectedToken: req.cookies['_csrf'],
-                receivedToken: req.headers['csrf-token'] || req.headers['x-csrf-token'] || req.body._csrf
-            } : undefined
+            error: 'Security token missing or invalid',
+            message: 'Please refresh the page and try again'
         });
     }
 
-    res.status(500).json({
-        error: 'Something went wrong!',
-        message: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
+    next(err);
 });
 
 const startServer = async (port) => {

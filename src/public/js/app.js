@@ -1,3 +1,29 @@
+// Debug logging for CSRF token
+document.addEventListener('DOMContentLoaded', () => {
+    console.group('CSRF Token Debug Info');
+    const metaToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    const formToken = document.querySelector('input[name="_csrf"]')?.value;
+    const cookieToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('XSRF-TOKEN='))
+        ?.split('=')[1];
+
+    console.log('Meta Tag Token:', metaToken);
+    console.log('Form Input Token:', formToken);
+    console.log('Cookie Token:', cookieToken);
+    console.log('All Cookies:', document.cookie);
+    console.groupEnd();
+
+    // If we don't have a form token but have a cookie token, set it in the form
+    if (!formToken && cookieToken) {
+        const csrfInput = document.querySelector('input[name="_csrf"]');
+        if (csrfInput) {
+            csrfInput.value = cookieToken;
+            console.log('Updated form token from cookie');
+        }
+    }
+});
+
 // Declare variables at the top
 const form = document.getElementById('reservationForm');
 const dateInput = document.getElementById('date');
@@ -331,19 +357,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const formInputs = form.querySelectorAll('.form-control, .form-select');
             formInputs.forEach(input => input.classList.remove('is-invalid'));
 
-            // Rest of the existing form submission code...
-            const csrfToken = document.cookie
-                .split('; ')
-                .find(row => row.startsWith('XSRF-TOKEN='))
-                ?.split('=')[1];
+            // Get CSRF token from the hidden input field
+            const csrfToken = document.querySelector('input[name="_csrf"]')?.value;
 
             if (!csrfToken) {
-                debug('CSRF token not found in cookies', {
+                debug('CSRF token not found in form', {
                     cookies: document.cookie,
                     metaToken: document.querySelector('meta[name="csrf-token"]')?.content,
                     inputToken: document.querySelector('input[name="_csrf"]')?.value
                 });
                 throw new Error('Security token missing. Please refresh the page.');
+            }
+
+            // Verify all form elements exist
+            if (!nameInput || !phoneInput || !emailInput) {
+                throw new Error('Form elements not found. Please refresh the page.');
             }
 
             const formData = {
@@ -427,8 +455,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-Token': csrfToken,
-                    'XSRF-TOKEN': csrfToken
+                    'CSRF-Token': csrfToken
                 },
                 credentials: 'include',
                 body: JSON.stringify(formData)

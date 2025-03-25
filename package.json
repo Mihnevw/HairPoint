@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "A hairdresser's salon reservation system with Google Calendar integration",
   "main": "src/server.js",
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
