@@ -72,19 +72,35 @@ const createReservation = async (req, res) => {
     // Add to in-memory storage
     reservations.push(reservation);
 
-    // Send confirmation emails
+    // Send confirmation emails (but don't block the response)
+    let emailStatus = { clientEmailSent: false, adminEmailSent: false };
+    
     try {
-      await sendClientConfirmation(reservation);
-      await sendAdminNotification(reservation);
+      // Send emails in background without awaiting
+      sendClientConfirmation(reservation)
+        .then(() => { emailStatus.clientEmailSent = true; })
+        .catch(err => console.error('Client email error:', err));
+      
+      sendAdminNotification(reservation)
+        .then(() => { emailStatus.adminEmailSent = true; })
+        .catch(err => console.error('Admin email error:', err));
+      
+      // Don't await here - continue with response
     } catch (emailError) {
-      console.error('Error sending confirmation emails:', emailError);
-      // Don't throw here, as the reservation was already created
+      console.error('Error initiating email send:', emailError);
+      // Continue with response, don't throw
     }
 
-    res.status(201).json(reservation);
+    // Return success response immediately
+    return res.status(201).json({
+      success: true,
+      reservation,
+      message: 'Резервацията е успешно направена!'
+    });
   } catch (error) {
     console.error('Error creating reservation:', error);
-    res.status(500).json({ 
+    // Ensure we always return valid JSON
+    return res.status(500).json({ 
       error: 'Възникна грешка при създаването на резервацията' 
     });
   }
