@@ -30,6 +30,7 @@
       --primary-color: #2c3e50;
       --secondary-color: #e74c3c;
       --accent-color: #3498db;
+      --success-color: #2ecc71;
     }
     
     body {
@@ -184,6 +185,69 @@
       
       .hero-section {
         padding: 50px 0;
+      }
+    }
+
+    /* Enhanced success message styles */
+    .alert-success {
+      border-color: var(--success-color);
+      background-color: rgba(46, 204, 113, 0.1);
+      color: #2c3e50;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      animation: fadeInUp 0.5s ease forwards;
+    }
+
+    .alert-success .alert-heading {
+      color: var(--success-color);
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+
+    .alert-success hr {
+      border-top-color: rgba(46, 204, 113, 0.3);
+    }
+
+    .alert-success strong {
+      color: var(--primary-color);
+      font-weight: bold;
+    }
+
+    /* Enhanced error message styles */
+    .alert-danger {
+      border-color: var(--secondary-color);
+      background-color: rgba(231, 76, 60, 0.1);
+      color: #2c3e50;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      animation: fadeInUp 0.5s ease forwards;
+    }
+
+    .alert-danger .alert-heading {
+      color: var(--secondary-color);
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+
+    .alert-danger hr {
+      border-top-color: rgba(231, 76, 60, 0.3);
+    }
+
+    .alert-danger strong {
+      color: var(--primary-color);
+      font-weight: bold;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
       }
     }
   </style>

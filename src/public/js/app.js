@@ -435,15 +435,22 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
             // Send the request
-            const response = await fetch('/api/reservations', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                credentials: 'include',
-                body: JSON.stringify(formData)
-            });
+            let response;
+            try {
+                response = await fetch('/api/reservations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(formData)
+                });
+            } catch (networkError) {
+                // Network error (offline, server down, etc.)
+                console.error('Network error:', networkError);
+                throw new Error('Не може да се осъществи връзка със сървъра. Моля, проверете интернет връзката си и опитайте отново.');
+            }
 
             // Log response details for debugging
             console.group('Response Debug');
@@ -456,7 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Check if response is OK
             if (!response.ok) {
                 // Try to parse as JSON, but handle cases where it's not JSON
-                let errorMessage = 'Възникна грешка при изпращането на резервацията';
+                let errorMessage = 'Възникна грешка при изпращането на резервацията. Моля, опитайте отново.';
                 
                 try {
                     const contentType = response.headers.get('content-type');
@@ -467,9 +474,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         // If not JSON, try to get text
                         const text = await response.text();
                         console.log('Non-JSON response:', text);
+                        
+                        // For 500 errors, show a more user-friendly message
+                        if (response.status === 500) {
+                            errorMessage = 'Възникна сървърна грешка. Моля, опитайте отново по-късно.';
+                        } else if (response.status === 404) {
+                            errorMessage = 'Услугата не е намерена. Моля, опитайте отново по-късно.';
+                        }
                     }
                 } catch (parseError) {
                     console.error('Error parsing response:', parseError);
+                    errorMessage = 'Възникна неочаквана грешка. Моля, опитайте отново.';
                 }
                 
                 throw new Error(errorMessage);
@@ -492,11 +507,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 data = { success: true };
             }
 
-            // Success - show message and reset form
-            if (successMessage) {
-                successMessage.textContent = 'Резервацията е успешно направена! Ще получите потвърждение на имейл.';
-                successMessage.style.display = 'block';
-            }
+            // Show enhanced success message
+            showEnhancedSuccess(formData, data, successMessage);
 
             // Reset form
             form.reset();
@@ -516,10 +528,165 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     } catch (error) {
         console.error('Form submission error:', error);
-        if (errorMessage) {
-            errorMessage.textContent = error.message;
-            errorMessage.style.display = 'block';
-        }
+        showEnhancedError(error, errorMessage);
     }
   });
+});
+
+// Function to show enhanced error messages
+function showEnhancedError(error, errorElement) {
+    if (!errorElement) return;
+    
+    let icon = '<i class="fas fa-exclamation-circle me-2"></i>';
+    let title = 'Грешка при резервацията';
+    let message = error.message || 'Възникна грешка при изпращането на резервацията. Моля, опитайте отново.';
+    let suggestion = '';
+    
+    // Determine error type and set appropriate message
+    if (error.message.includes('полета')) {
+        title = 'Непопълнени полета';
+        suggestion = 'Моля, проверете дали сте попълнили всички полета.';
+    } else if (error.message.includes('телефонен')) {
+        title = 'Невалиден телефон';
+        suggestion = 'Телефонният номер трябва да съдържа 10 цифри.';
+    } else if (error.message.includes('Gmail')) {
+        title = 'Невалиден имейл';
+        suggestion = 'В момента приемаме само Gmail адреси.';
+    } else if (error.message.includes('зает')) {
+        title = 'Зает час';
+        suggestion = 'Моля, изберете друг час или дата.';
+    } else if (error.message.includes('изтекъл') || error.message.includes('token')) {
+        title = 'Изтекла сесия';
+        suggestion = 'Моля, опреснете страницата и опитайте отново.';
+    } else if (error.message.includes('връзка')) {
+        title = 'Проблем с връзката';
+        suggestion = 'Моля, проверете интернет връзката си и опитайте отново.';
+    } else if (error.message.includes('сървърна')) {
+        title = 'Сървърна грешка';
+        suggestion = 'Нашите системи изпитват затруднения. Моля, опитайте отново по-късно.';
+    } else if (error.message.includes('намерена')) {
+        title = 'Услугата не е намерена';
+        suggestion = 'Моля, опитайте отново по-късно или се свържете с нас.';
+    } else if (error.message.includes('неочаквана')) {
+        title = 'Неочаквана грешка';
+        suggestion = 'Моля, опитайте отново или се свържете с нас за съдействие.';
+    }
+    
+    // Create enhanced error message
+    const enhancedErrorHTML = `
+        <div class="alert alert-danger p-4">
+            <h4 class="alert-heading">${icon}${title}</h4>
+            <p>${message}</p>
+            ${suggestion ? `<hr><p class="mb-0">${suggestion}</p>` : ''}
+            <button type="button" class="btn-close position-absolute top-0 end-0 m-2" 
+                   onclick="this.parentElement.style.display='none'"></button>
+        </div>
+    `;
+    
+    errorElement.innerHTML = enhancedErrorHTML;
+    errorElement.style.display = 'block';
+    errorElement.scrollIntoView({ behavior: 'smooth' });
+}
+
+// Function to show enhanced success message
+function showEnhancedSuccess(formData, data, successElement) {
+    // Create a unique ID for the toast
+    const toastId = `toast-${Date.now()}`;
+    const bookingReference = data?.reservation?.id || `REF-${Date.now().toString().slice(-6)}`;
+    
+    // Create toast HTML
+    const toastHTML = `
+        <div id="${toastId}" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>Резервацията е успешна!</strong>
+                    </div>
+                    <div class="small">
+                        <div>Дата: ${formData.date}</div>
+                        <div>Час: ${formData.startTime} - ${formData.endTime}</div>
+                        <div>Номер: ${bookingReference}</div>
+                        <div class="mt-2">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Очаквайте потвърждение на имейл
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+    
+    // Add toast to container
+    const toastContainer = document.querySelector('.toast-container');
+    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+    
+    // Initialize and show the toast
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, {
+        animation: true,
+        autohide: true,
+        delay: 5000 // Show for 5 seconds
+    });
+    
+    // Show the toast
+    toast.show();
+    
+    // Remove the toast element after it's hidden
+    toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+    });
+    
+    // Reset form
+    if (form) {
+        form.reset();
+        const selectedDateDiv = document.getElementById('selectedDate');
+        const startTimeSelect = document.getElementById('startTime');
+        const endTimeSelect = document.getElementById('endTime');
+        
+        if (selectedDateDiv) selectedDateDiv.textContent = '';
+        if (startTimeSelect) startTimeSelect.value = '';
+        if (endTimeSelect) {
+            endTimeSelect.value = '';
+            endTimeSelect.disabled = true;
+        }
+    }
+    
+    // Refresh calendar if it exists
+    if (calendar) {
+        calendar.refetchEvents();
+    }
+}
+
+// Add this at the bottom of the file
+// Global error handler to catch unexpected errors
+window.addEventListener('error', function(event) {
+    console.error('Global error caught:', event.error);
+    
+    // Only handle if we have access to the error message element
+    const errorMessageElement = document.getElementById('errorMessage');
+    if (errorMessageElement) {
+        const error = {
+            message: 'В приложението възникна неочаквана грешка. Моля, опреснете страницата и опитайте отново.'
+        };
+        showEnhancedError(error, errorMessageElement);
+    }
+    
+    // Don't prevent default to allow console error to still show
+    return false;
+});
+
+// Also add unhandled promise rejection handler
+window.addEventListener('unhandledrejection', function(event) {
+    console.error('Unhandled promise rejection:', event.reason);
+    
+    // Only handle if we have access to the error message element
+    const errorMessageElement = document.getElementById('errorMessage');
+    if (errorMessageElement) {
+        const error = {
+            message: 'Възникна грешка при обработката на заявката. Моля, опитайте отново.'
+        };
+        showEnhancedError(error, errorMessageElement);
+    }
 });
